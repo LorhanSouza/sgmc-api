@@ -1,5 +1,7 @@
 package br.com.mam.sgmc.model.moto;
 
+import java.time.Instant;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,7 +22,10 @@ public class CondicaoSeguro {
     private Long id;
     @Column(name = "tipo", length = 45)
     private String tipo;
-    private float valor;
+    @Column(name = "validade_fim")
+    private Instant validadeFim;
+    @Column(name = "valor")
+    private Float valorFranquia;
 
     @ManyToOne
     @JoinColumn(name = "id_seguro")
