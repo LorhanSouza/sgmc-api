@@ -19,8 +19,8 @@ public class Moto {
     private String placa;
     @Column(name = "ano")
     private int ano;
-    @Column(name = "seguro")
-    private Boolean temSeguro;
+    @Column(name = "cor")
+    private String cor;
 
     @OneToOne
     @JoinColumn(name = "id_seguro")
