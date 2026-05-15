@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import br.com.mam.sgmc.api.dto.response.CidadeResponseDTO;
 import br.com.mam.sgmc.api.dto.response.PaisResponseDTO;
 import br.com.mam.sgmc.api.dto.response.UfResponseDTO;
 import br.com.mam.sgmc.api.openapi.LocalizacaoControllerOpenAPI;
+import br.com.mam.sgmc.errors.ResponseStatusException;
 import br.com.mam.sgmc.services.LocalizacaoService;
 import lombok.RequiredArgsConstructor;
 
