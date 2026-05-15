@@ -10,7 +10,7 @@ import br.com.mam.sgmc.model.localizacao.Uf;
 public interface UfRepository extends JpaRepository<Uf, String> {
     Uf findByUfSiglaIgnoreCase(String sigla);
 
-    @Query("SELECT u FROM Uf u" + 
+    @Query("SELECT u FROM Uf u " + 
             "LEFT JOIN u.pais p " +
             "WHERE " +
             "(:sigla IS NULL OR u.ufSigla = :sigla) AND " +
