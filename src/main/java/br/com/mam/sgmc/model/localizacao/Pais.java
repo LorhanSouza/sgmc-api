@@ -15,7 +15,7 @@ import lombok.Data;
 @Data
 public class Pais {
     @Id
-    @Column(name = "pais_sigla", length = 3)
+    @Column(name = "pais_sigla", length = 2)
     private String sigla;
     @Column(name = "nome", length = 150)
     private String nome;
