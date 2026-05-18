@@ -21,7 +21,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import br.com.mam.sgmc.api.dto.request.MembroRequestDTO;
 import br.com.mam.sgmc.api.dto.response.MembroResponseDTO;
 import br.com.mam.sgmc.api.openapi.MembroControllerOpenAPI;
+import br.com.mam.sgmc.errors.ResourceNotFoundException;
+import br.com.mam.sgmc.model.Identificacao;
 import br.com.mam.sgmc.model.Membro;
+import br.com.mam.sgmc.model.localizacao.Pais;
 import br.com.mam.sgmc.services.MembroService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +32,13 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping(value = "/membros")
 @RequiredArgsConstructor
-public class MembroController implements MembroControllerOpenAPI{
+public class MembroController implements MembroControllerOpenAPI {
 
     private final MembroService membroService;
 
     @PostMapping
-    public ResponseEntity<Void> criarMembro(@RequestBody @Valid MembroRequestDTO membroDTO) throws ResponseStatusException {
+    public ResponseEntity<String> criarMembro(@RequestBody @Valid MembroRequestDTO membroDTO)
+            throws ResourceNotFoundException {
         Membro membro = new Membro();
 
         membro.setNome(membroDTO.getNome());
@@ -48,8 +52,22 @@ public class MembroController implements MembroControllerOpenAPI{
         membro.setAtivo(membroDTO.getCodigoAtivo());
         membro.setTamanhoCamisa(membroDTO.getTamanhoCamisa());
         membro.setDataAdmissao(Date.valueOf(membroDTO.getDataAdmissao()));
+        
+        if (membroDTO.getIdentidade() != null) {
+            membro.setIdentidade(new Identificacao());
+            membro.getIdentidade().setTipo(membroDTO.getIdentidade().getTipo());
+            membro.getIdentidade().setIdentidade(membroDTO.getIdentidade().getIdentidade());
+            membro.getIdentidade().setEmissor(membroDTO.getIdentidade().getEmissor());
+            membro.getIdentidade().setDataEmissao(Date.valueOf(membroDTO.getIdentidade().getDataEmissao()));
+            membro.getIdentidade().setMembro(membro);
+            membro.getIdentidade().setPais(new Pais());
+            membro.getIdentidade().getPais().setSigla(membroDTO.getIdentidade().getPaisSigla());
+        }else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificação não preenchida");
+        }
 
-        membro = this.membroService.salvarMembro(membro, membroDTO.getIdCargo(), membroDTO.getIdSede());
+        membro = this.membroService.salvarMembro(membro, membroDTO.getIdCargo(), membroDTO.getIdSede(), 
+                membroDTO.getIdentidade().getPaisSigla());
 
         String location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
                 .buildAndExpand(membro.getId()).toUriString();
@@ -72,7 +90,7 @@ public class MembroController implements MembroControllerOpenAPI{
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MembroResponseDTO> atualizarMembro(@PathVariable Long id, @RequestBody @Valid MembroRequestDTO membroDTO) {
+    public ResponseEntity<MembroResponseDTO> atualizarMembro(@PathVariable Long id, @RequestBody @Valid MembroRequestDTO membroDTO) throws ResourceNotFoundException{
         Membro membro = new Membro();
         membro.setNome(membroDTO.getNome());
         membro.setApelido(membroDTO.getApelido());
@@ -86,7 +104,21 @@ public class MembroController implements MembroControllerOpenAPI{
         membro.setTamanhoCamisa(membroDTO.getTamanhoCamisa());
         membro.setDataAdmissao(Date.valueOf(membroDTO.getDataAdmissao()));
 
-        membro = this.membroService.atualizarMembro(membro, id, membroDTO.getIdCargo(), membroDTO.getIdSede());
+        if (membroDTO.getIdentidade() != null) {
+            membro.setIdentidade(new Identificacao());
+            membro.getIdentidade().setTipo(membroDTO.getIdentidade().getTipo());
+            membro.getIdentidade().setIdentidade(membroDTO.getIdentidade().getIdentidade());
+            membro.getIdentidade().setEmissor(membroDTO.getIdentidade().getEmissor());
+            membro.getIdentidade().setDataEmissao(Date.valueOf(membroDTO.getIdentidade().getDataEmissao()));
+            membro.getIdentidade().setMembro(membro);
+            membro.getIdentidade().setPais(new Pais());
+            membro.getIdentidade().getPais().setSigla(membroDTO.getIdentidade().getPaisSigla());
+        }else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificação não preenchida");
+        }
+
+        membro = this.membroService.atualizarMembro(membro, id, membroDTO.getIdCargo(), membroDTO.getIdSede(),
+                membro.getIdentidade().getPais().getSigla());
         return ResponseEntity.status(HttpStatus.OK).body(MembroResponseDTO.toResponseDTO(membro));
     }
 
