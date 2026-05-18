@@ -1,5 +1,6 @@
 package br.com.mam.sgmc.services;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -7,11 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import br.com.mam.sgmc.errors.ResourceNotFoundException;
+import br.com.mam.sgmc.model.Identificacao;
 import br.com.mam.sgmc.model.Membro;
 import br.com.mam.sgmc.model.enums.Ativo;
 import br.com.mam.sgmc.repository.CargoRepository;
 import br.com.mam.sgmc.repository.SedeRepository;
 import br.com.mam.sgmc.repository.MembroRepository;
+import br.com.mam.sgmc.repository.PaisRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -20,8 +23,9 @@ public class MembroService {
     private final MembroRepository membroRepository;
     private final CargoRepository cargoRepository;
     private final SedeRepository sedeRepository;
+    private final PaisRepository paisRepository;
 
-    public Membro salvarMembro(Membro membro, Long idCargo, Long idSede) {
+    public Membro salvarMembro(Membro membro, Long idCargo, Long idSede, String paisSigla) {
         if (this.membroRepository.findByNome(membro.getNome()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este nome já existe.");
         }
@@ -36,10 +40,18 @@ public class MembroService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sede não encontrada com ID: " + idSede)));
         }
 
+        if (membro.getIdentidade() != null && paisSigla != null) {
+            if ("BR".equalsIgnoreCase(paisSigla) && !"CPF".equalsIgnoreCase(membro.getIdentidade().getTipo())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Para o Brasil, o tipo de identificação deve ser CPF.");
+            }
+            membro.getIdentidade().setPais(paisRepository.findById(paisSigla)
+                .orElseThrow(() -> new ResourceNotFoundException("País não encontrado com sigla: " + paisSigla)));
+        }
+
         return membroRepository.save(membro);
     }
 
-    public Membro atualizarMembro(Membro membro, Long id, Long idCargo, Long idSede) {
+    public Membro atualizarMembro(Membro membro, Long id, Long idCargo, Long idSede, String paisSigla) {
         Membro membroExistente = membroRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Membro não encontrado com ID: " + id));
         
@@ -49,10 +61,11 @@ public class MembroService {
         membroExistente.setEmail(membro.getEmail());
         membroExistente.setTelefone(membro.getTelefone());
         membroExistente.setDataNascimento(membro.getDataNascimento());
+        membroExistente.setNacionalidade(membro.getNacionalidade());
+        membroExistente.setNaturalidade(membro.getNaturalidade());
         membroExistente.setEhBatizado(membro.getEhBatizado());
         membroExistente.setTemEscudo(membro.getTemEscudo());
         
-        // Inactivation logic
         if (membro.getAtivo() != null && !membro.getAtivo().equals(membroExistente.getAtivo())) {
             if (membro.getAtivo().equals(Ativo.INATIVO.getCodigo())) {
                 membroExistente.setAtivo(Ativo.INATIVO.getCodigo());
@@ -74,27 +87,63 @@ public class MembroService {
         if (idSede != null) {
             membroExistente.setSede(sedeRepository.findById(idSede)
                 .orElseThrow(() -> new ResourceNotFoundException("Sede não encontrada com ID: " + idSede)));
-        } else {
-            membroExistente.setSede(null); //OLHAR CASO DE USO DE MEMBRO SEM SEDE
+        }
+
+        if (membro.getIdentidade() != null && paisSigla != null) {
+            if ("BR".equalsIgnoreCase(paisSigla) && !"CPF".equalsIgnoreCase(membro.getIdentidade().getTipo())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Para o Brasil, o tipo de identificação deve ser CPF.");
+            }
+            
+            Identificacao identidade = membro.getIdentidade();
+            identidade.setPais(paisRepository.findById(paisSigla)
+                .orElseThrow(() -> new ResourceNotFoundException("País não encontrado com sigla: " + paisSigla)));
+            
+            if (membroExistente.getIdentidade() != null) {
+                identidade.setIdIdentificacao(membroExistente.getIdentidade().getIdIdentificacao());
+            }
+            identidade.setMembro(membroExistente);
+            membroExistente.setIdentidade(identidade);
         }
 
         return this.membroRepository.save(membroExistente);
     }
 
-    public List<Membro> listarMembros(Integer ativo) { //OLHAR CASO DE USO DE LISTA DE MEMBROS ATIVOS E INATIVOS POR FILTRO E ORDENAÇÃO DE DATA DE ADMISSÃO
+    public List<Membro> listarMembros(Integer ativo) {
+        List<Membro> membrosBanco;
         if (ativo != null) {
-            return this.membroRepository.findByAtivo(ativo);
+            membrosBanco = this.membroRepository.findByAtivo(ativo);
+            for (Membro membro : membrosBanco) {
+                membro.setIdade(this.calcularIdade(membro));
+            }
+            return membrosBanco;
         }
-        return this.membroRepository.findAll();
+        membrosBanco = this.membroRepository.findAll();
+        for (Membro membro : membrosBanco) {
+            membro.setIdade(this.calcularIdade(membro));
+        }
+        return membrosBanco;
     }
 
     public Membro buscarPorId(Long id) {
-        return this.membroRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Este id do membro não existe!"));
+        Membro membro = this.membroRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Este id do membro não existe!"));
+        membro.setIdade(this.calcularIdade(membro));
+        return membro;
     }
 
     public void inativarMembro(Long id) {
         Membro membro = this.buscarPorId(id);
         membro.setAtivo(Ativo.INATIVO.getCodigo());
         this.membroRepository.save(membro);
+    }
+
+    public Integer calcularIdade(Membro membro) {
+        LocalDate hoje = LocalDate.now();
+        LocalDate dataNascimento = membro.getDataNascimento().toLocalDate();
+        Integer idade = hoje.getYear() - dataNascimento.getYear();
+        if (hoje.getMonthValue() < dataNascimento.getMonthValue() || 
+            (hoje.getMonthValue() == dataNascimento.getMonthValue() && hoje.getDayOfMonth() < dataNascimento.getDayOfMonth())) {
+            idade--;
+        }
+        return idade;
     }
 }
