@@ -30,6 +30,7 @@ public class MembroResponseDTO implements Serializable {
     private Long idCargo; // TODO: Precisa disso? Não seria melhor passar só o nome do cargo?
     private Long idSede; // TODO: Precisa disso? Não seria melhor passar só o nome da sede?
     private IdentificacaoResponseDTO identidade;
+    private FichaMedicaResponseDTO fichaMedica;
 
     public static MembroResponseDTO toResponseDTO(Membro membro) {
         return new MembroResponseDTO(
@@ -50,7 +51,8 @@ public class MembroResponseDTO implements Serializable {
                 membro.getDataAdmissao(),
                 membro.getCargo() != null ? membro.getCargo().getId() : null,
                 membro.getSede() != null ? membro.getSede().getId() : null,
-                membro.getIdentidade() != null ? IdentificacaoResponseDTO.toResponseDTO(membro.getIdentidade()) : null);
+                membro.getIdentidade() != null ? IdentificacaoResponseDTO.toResponseDTO(membro.getIdentidade()) : null,
+                membro.getFichaMedica() != null ? FichaMedicaResponseDTO.toResponseDTO(membro.getFichaMedica()) : null);
     }
 
     private static Boolean getBooleanFromInt(Integer value) {
