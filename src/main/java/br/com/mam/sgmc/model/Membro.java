@@ -50,12 +50,16 @@ public class Membro {
     private Integer ehBatizado;
     @Column(name = "tem_escudo")
     private Integer temEscudo;
+    @Column(name = "data_admissao")
+    private Date dataAdmissao;
     @Column(name = "ativo")
     private Integer ativo;
     @Column(name = "tamanho_camisa", length = 20)
     private String tamanhoCamisa;
-    @Column(name = "data_admissao")
-    private Date dataAdmissao;
+    @Column(name = "nome_contato_emergencia", length = 100)
+    private String nomeContatoEmergencia;
+    @Column(name = "telefone_contato_emergencia", length = 15)
+    private String telefoneContatoEmergencia;
 
     @ManyToOne
     @JoinColumn(name = "id_cargo")
@@ -65,11 +69,14 @@ public class Membro {
     @JoinColumn(name = "id_sede")
     private Sede sede;
 
-    @OneToMany(mappedBy = "membro", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Moto> motos;
+    @OneToOne(mappedBy = "membro", cascade = CascadeType.ALL, orphanRemoval = true)
+    private FichaMedica fichaMedica;
 
     @OneToOne(mappedBy = "membro", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Identificacao identidade;
+
+    @OneToMany(mappedBy = "membro", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Moto> motos;
 }
