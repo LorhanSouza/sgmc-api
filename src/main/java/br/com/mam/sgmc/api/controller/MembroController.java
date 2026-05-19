@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import br.com.mam.sgmc.api.dto.request.FichaMedicaRequestDTO;
 import br.com.mam.sgmc.api.dto.request.MembroRequestDTO;
 import br.com.mam.sgmc.api.dto.response.MembroResponseDTO;
 import br.com.mam.sgmc.api.openapi.MembroControllerOpenAPI;
@@ -66,6 +67,12 @@ public class MembroController implements MembroControllerOpenAPI {
             membro.getIdentidade().getPais().setSigla(membroDTO.getIdentidade().getPaisSigla());
         }else{
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificação não preenchida");
+        }
+        
+        if (membroDTO.getFichaMedica() != null){
+            membro.setFichaMedica(FichaMedicaRequestDTO.paraEntidade(membroDTO.getFichaMedica()));
+        }else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ficha médica não preenchida");
         }
 
         membro = this.membroService.salvarMembro(membro, membroDTO.getIdCargo(), membroDTO.getIdSede(), 
@@ -119,6 +126,12 @@ public class MembroController implements MembroControllerOpenAPI {
             membro.getIdentidade().getPais().setSigla(membroDTO.getIdentidade().getPaisSigla());
         }else{
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificação não preenchida");
+        }
+
+        if (membroDTO.getFichaMedica() != null){
+            membro.setFichaMedica(FichaMedicaRequestDTO.paraEntidade(membroDTO.getFichaMedica()));
+        }else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ficha médica não preenchida");
         }
 
         membro = this.membroService.atualizarMembro(membro, id, membroDTO.getIdCargo(), membroDTO.getIdSede(),
