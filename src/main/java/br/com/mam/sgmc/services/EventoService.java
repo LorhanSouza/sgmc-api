@@ -23,12 +23,10 @@ public class EventoService {
     public Evento criarEvento(Evento evento){
         Local local = this.localService.criarLocal(evento.getLocal());
         evento.setLocal(local);
-        evento.setNome(eventoRequestDTO.getNome());
-        evento.setDescricao(eventoRequestDTO.getDescricao());
-        evento.setDataInicio(eventoRequestDTO.getDataInicio());
-        evento.setDataFim(eventoRequestDTO.getDataFim());
-        evento.setValor(eventoRequestDTO.getValor());
-        evento.setLocal(local);
         return this.eventoRepository.save(evento);
+    }
+
+    public void deletarEvento(Long id) {
+        this.eventoRepository.deleteById(id);
     }
 }
