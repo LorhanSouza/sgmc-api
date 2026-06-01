@@ -1,0 +1,157 @@
+package br.com.mam.sgmc.api.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import br.com.mam.sgmc.api.dto.request.EventoRequestDTO;
+import br.com.mam.sgmc.api.dto.request.LocalRequestDTO;
+import br.com.mam.sgmc.model.Evento;
+import br.com.mam.sgmc.model.localizacao.Local;
+import br.com.mam.sgmc.services.EventoService;
+import br.com.mam.sgmc.errors.ResourceNotFoundException;
+
+@SpringBootTest
+@Transactional
+@DisplayName("Testes de Integração - EventoController")
+class EventoControllerTest {
+
+    private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext context;
+
+    @MockitoBean
+    private EventoService eventoService;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    private EventoRequestDTO eventoRequestDTO;
+    private Evento evento;
+
+    @BeforeEach
+    void setUp() {
+        objectMapper.registerModule(new JavaTimeModule());
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+
+        LocalRequestDTO localDTO = new LocalRequestDTO();
+        localDTO.setNome("Sede Campestre");
+        localDTO.setEndereco("Rua das Flores");
+        localDTO.setBairro("Centro");
+        localDTO.setNumero("123");
+        localDTO.setCodigoPostal("12345-678");
+        localDTO.setContato("11988888888");
+        localDTO.setCapacidade(100);
+        localDTO.setCidade("São Paulo");
+        localDTO.setProvinciaEstado("SP");
+        localDTO.setPais("Brasil");
+
+        eventoRequestDTO = new EventoRequestDTO();
+        eventoRequestDTO.setNome("Encontro de Motos");
+        eventoRequestDTO.setDescricao("Encontro anual");
+        eventoRequestDTO.setDataInicio(Instant.parse("2026-12-01T10:00:00Z"));
+        eventoRequestDTO.setDataFim(Instant.parse("2026-12-01T18:00:00Z"));
+        eventoRequestDTO.setValor(50.0f);
+        eventoRequestDTO.setLocal(localDTO);
+
+        Local local = Local.fromRequestDTO(localDTO);
+        local.setId(1L);
+
+        evento = new Evento();
+        evento.setId(1L);
+        evento.setNome(eventoRequestDTO.getNome());
+        evento.setDescricao(eventoRequestDTO.getDescricao());
+        evento.setDataInicio(eventoRequestDTO.getDataInicio());
+        evento.setDataFim(eventoRequestDTO.getDataFim());
+        evento.setValor(eventoRequestDTO.getValor());
+        evento.setLocal(local);
+    }
+
+    @Test
+    @DisplayName("Deve criar um evento com sucesso")
+    void deveCriarEventoComSucesso() throws Exception {
+        when(eventoService.criarEvento(any(Evento.class))).thenReturn(evento);
+
+        mockMvc.perform(post("/eventos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventoRequestDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Encontro de Motos"));
+    }
+
+    @Test
+    @DisplayName("Deve listar todos os eventos")
+    void deveListarEventos() throws Exception {
+        when(eventoService.listarEventos()).thenReturn(List.of(evento));
+
+        mockMvc.perform(get("/eventos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].nome").value("Encontro de Motos"));
+    }
+
+    @Test
+    @DisplayName("Deve buscar evento por ID")
+    void deveBuscarEventoPorId() throws Exception {
+        when(eventoService.buscarPorId(1L)).thenReturn(evento);
+
+        mockMvc.perform(get("/eventos/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Encontro de Motos"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 ao buscar ID inexistente")
+    void deveRetornar404AoBuscarIdInexistente() throws Exception {
+        when(eventoService.buscarPorId(99L)).thenThrow(new ResourceNotFoundException("Evento não encontrado"));
+
+        mockMvc.perform(get("/eventos/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve atualizar um evento com sucesso")
+    void deveAtualizarEventoComSucesso() throws Exception {
+        when(eventoService.atualizarEvento(eq(1L), any(Evento.class))).thenReturn(evento);
+
+        mockMvc.perform(put("/eventos/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventoRequestDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Encontro de Motos"));
+    }
+
+    @Test
+    @DisplayName("Deve deletar um evento com sucesso")
+    void deveDeletarEventoComSucesso() throws Exception {
+        doNothing().when(eventoService).deletarEvento(1L);
+
+        mockMvc.perform(delete("/eventos/1"))
+                .andExpect(status().isNoContent());
+    }
+}
