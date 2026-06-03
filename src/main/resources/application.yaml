@@ -4,3 +4,15 @@ spring:
             - testH2
     application:
         name: sgmc-back
+    security:
+        oauth2:
+            client:
+                registration:
+                    sgmc:
+                        provider: keycloak
+                        client-id: sgmc
+                        client-secret: 2wuAGkrVdfoDWfJxMuAtYqRmxXT0k73W
+                        authorization-grant-type: client_credentials
+                provider:
+                    keycloak:
+                        token-uri: http://localhost:8089/realms/sgmc/protocol/openid-connect/token
