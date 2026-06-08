@@ -157,4 +157,26 @@ class EventoControllerTest {
         mockMvc.perform(delete("/eventos/1").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("Deve listar inscrições de um evento")
+    void deveListarInscricoesDeUmEvento() throws Exception {
+        br.com.mam.sgmc.model.Membro membroMock = new br.com.mam.sgmc.model.Membro();
+        membroMock.setId(10L);
+        membroMock.setNome("Membro Teste");
+        
+        br.com.mam.sgmc.model.pk.InscricaoPk pk = new br.com.mam.sgmc.model.pk.InscricaoPk(evento, membroMock);
+        br.com.mam.sgmc.model.Inscricao inscricao = new br.com.mam.sgmc.model.Inscricao();
+        inscricao.setPk(pk);
+        inscricao.setDataInscricao(new java.sql.Date(System.currentTimeMillis()));
+        
+        evento.setInscricoes(List.of(inscricao));
+
+        when(eventoService.buscarPorId(1L)).thenReturn(evento);
+
+        mockMvc.perform(get("/eventos/1/inscricoes").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].idMembro").value(10))
+                .andExpect(jsonPath("$[0].nomeMembro").value("Membro Teste"));
+    }
 }
