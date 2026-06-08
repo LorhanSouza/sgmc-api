@@ -55,4 +55,10 @@ public interface EventoControllerOpenAPI {
             @ApiResponse(responseCode = "404", description = "Não encontrado", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{}")))
     })
     ResponseEntity<List<InscricaoResponseDTO>> inscreverMembros(Long id, @Valid List<InscricaoRequestDTO> inscricoes);
+
+    @Operation(summary = "Lista todos os membros inscritos em um evento", responses = {
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "[]"))),
+            @ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{}")))
+    })
+    ResponseEntity<List<InscricaoResponseDTO>> listarInscritos(Long id);
 }
