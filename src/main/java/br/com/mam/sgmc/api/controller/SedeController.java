@@ -16,16 +16,18 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import br.com.mam.sgmc.api.openapi.SedeControllerOpenAPI;
+
 @PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
 @RestController
 @RequestMapping("/sedes")
 @RequiredArgsConstructor
-public class SedeController {
+public class SedeController implements SedeControllerOpenAPI {
 
     private final SedeService sedeService;
 
     @PostMapping
-    public ResponseEntity<Void> salvarSede(@RequestBody SedeRequestDTO sedeRequestDTO) {
+    public ResponseEntity<Void> salvarSede(@RequestBody @Valid SedeRequestDTO sedeRequestDTO) {
         Sede sedeSalva = sedeService.salvarSede(
             SedeRequestDTO.toSede(sedeRequestDTO),
             sedeRequestDTO.getCidade(), 
