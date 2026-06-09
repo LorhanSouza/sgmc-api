@@ -11,7 +11,8 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    RestClient keycloakRestClient(RestClient.Builder builder, OAuth2AuthorizedClientManager authorizedClientManager) {
+    RestClient keycloakRestClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+        RestClient.Builder builder = RestClient.builder();
         var requestInterceptor = new OAuth2ClientHttpRequestInterceptor(authorizedClientManager);
         requestInterceptor.setClientRegistrationIdResolver((HttpRequest request) -> "sgmc");
 
