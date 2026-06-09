@@ -4,7 +4,7 @@ server:
 spring:
     profiles:
         active:
-            - testH2
+            - dev
     application:
         name: sgmc-back
     security:   
