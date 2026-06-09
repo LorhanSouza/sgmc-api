@@ -32,13 +32,16 @@ import br.com.mam.sgmc.model.localizacao.Pais;
 import br.com.mam.sgmc.model.localizacao.Uf;
 import br.com.mam.sgmc.services.SedeService;
 
-@WebMvcTest(SedeController.class)
+@WebMvcTest(controllers = SedeController.class, properties = "server.servlet.context-path=")
 @Import(SecurityConfig.class)
 @DisplayName("Testes de Integração - SedeController")
 class SedeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private br.com.mam.sgmc.config.SgmcSecurity sgmcSecurity;
 
     @MockitoBean
     private SedeService sedeService;
@@ -50,6 +53,10 @@ class SedeControllerTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(sgmcSecurity.isSelf(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.isMotoOwner(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.canInscribe(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+
         sedeRequestDTO = new SedeRequestDTO();
         sedeRequestDTO.setNome("Sede Central");
         sedeRequestDTO.setEndereco("Rua Principal, 100");
@@ -97,7 +104,7 @@ class SedeControllerTest {
                 .thenReturn(sede);
 
             mockMvc.perform(post("/sedes")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sedeRequestDTO)))
                     .andExpect(status().isCreated())
@@ -110,7 +117,7 @@ class SedeControllerTest {
             sedeRequestDTO.setNome(null);
 
             mockMvc.perform(post("/sedes")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sedeRequestDTO)))
                     .andExpect(status().isBadRequest());
@@ -122,7 +129,7 @@ class SedeControllerTest {
             sedeRequestDTO.setEndereco(null);
 
             mockMvc.perform(post("/sedes")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sedeRequestDTO)))
                     .andExpect(status().isBadRequest());
@@ -139,7 +146,7 @@ class SedeControllerTest {
             when(sedeService.buscarPorId(1L)).thenReturn(sede);
 
             mockMvc.perform(get("/sedes/buscar/1")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
                     .andExpect(jsonPath("$.nome").value("Sede Central"))
@@ -155,7 +162,7 @@ class SedeControllerTest {
                 .thenThrow(new ResourceNotFoundException("Sede não encontrada"));
 
             mockMvc.perform(get("/sedes/buscar/99")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }
@@ -171,7 +178,7 @@ class SedeControllerTest {
                 .thenReturn(List.of(sede));
 
             mockMvc.perform(get("/sedes/listar")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(1))
                     .andExpect(jsonPath("$[0].nome").value("Sede Central"));
@@ -184,7 +191,7 @@ class SedeControllerTest {
                 .thenReturn(List.of(sede));
 
             mockMvc.perform(get("/sedes/listar?nome=Sede Central")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].nome").value("Sede Central"));
         }
@@ -196,7 +203,7 @@ class SedeControllerTest {
                 .thenReturn(List.of());
 
             mockMvc.perform(get("/sedes/listar?nome=Inexistente")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isEmpty());
         }
@@ -212,7 +219,7 @@ class SedeControllerTest {
             when(sedeService.atualizarSede(eq(1L), any(Sede.class))).thenReturn(sede);
 
             mockMvc.perform(put("/sedes/1")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sedeRequestDTO)))
                     .andExpect(status().isOk())
@@ -227,7 +234,7 @@ class SedeControllerTest {
                 .thenThrow(new ResourceNotFoundException("Este id da sede não existe!"));
 
             mockMvc.perform(put("/sedes/99")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sedeRequestDTO)))
                     .andExpect(status().isNotFound());
@@ -244,7 +251,7 @@ class SedeControllerTest {
             doNothing().when(sedeService).inativarSede(1L);
 
             mockMvc.perform(patch("/sedes/1/inativar")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk());
         }
 
@@ -255,7 +262,7 @@ class SedeControllerTest {
                 .when(sedeService).inativarSede(99L);
 
             mockMvc.perform(patch("/sedes/99/inativar")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }

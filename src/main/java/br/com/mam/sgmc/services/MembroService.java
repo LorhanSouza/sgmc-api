@@ -77,6 +77,19 @@ public class MembroService {
         Membro membroExistente = membroRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Membro não encontrado com ID: " + id));
         
+        atualizarDadosBasicos(membroExistente, membro);
+        atualizarSede(membroExistente, idSede);
+        atualizarIdentidade(membroExistente, membro, paisSigla);
+
+        membroExistente = this.membroRepository.save(membroExistente);
+
+        atualizarFichaMedica(membroExistente, membro);
+        atualizarPosse(membroExistente, idCargo);
+
+        return membroExistente;
+    }
+
+    private void atualizarDadosBasicos(Membro membroExistente, Membro membro) {
         membroExistente.setNome(membro.getNome());
         membroExistente.setApelido(membro.getApelido());
         membroExistente.setSexo(membro.getSexo());
@@ -88,23 +101,24 @@ public class MembroService {
         membroExistente.setEstadoCivil(membro.getEstadoCivil());
         membroExistente.setEhBatizado(membro.getEhBatizado());
         membroExistente.setTemEscudo(membro.getTemEscudo());
-        
-        if (membro.getAtivo() != null && !membro.getAtivo().equals(membroExistente.getAtivo())) {
-            if (membro.getAtivo().equals(Ativo.INATIVO.getCodigo())) {
-                membroExistente.setAtivo(Ativo.INATIVO.getCodigo());
-            } else {
-                membroExistente.setAtivo(Ativo.ATIVO.getCodigo());
-            }
-        }
-        
         membroExistente.setTamanhoCamisa(membro.getTamanhoCamisa());
         membroExistente.setDataAdmissao(membro.getDataAdmissao());
+        
+        if (membro.getAtivo() != null && !membro.getAtivo().equals(membroExistente.getAtivo())) {
+            membroExistente.setAtivo(membro.getAtivo().equals(Ativo.INATIVO.getCodigo()) 
+                    ? Ativo.INATIVO.getCodigo() 
+                    : Ativo.ATIVO.getCodigo());
+        }
+    }
 
+    private void atualizarSede(Membro membroExistente, Long idSede) {
         if (idSede != null) {
             membroExistente.setSede(sedeRepository.findById(idSede)
                 .orElseThrow(() -> new ResourceNotFoundException("Sede não encontrada com ID: " + idSede)));
         }
+    }
 
+    private void atualizarIdentidade(Membro membroExistente, Membro membro, String paisSigla) {
         if (membro.getIdentidade() != null && paisSigla != null) {
             if ("BR".equalsIgnoreCase(paisSigla) && !"CPF".equalsIgnoreCase(membro.getIdentidade().getTipo())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Para o Brasil, o tipo de identificação deve ser CPF.");
@@ -120,13 +134,16 @@ public class MembroService {
             identidade.setMembro(membroExistente);
             membroExistente.setIdentidade(identidade);
         }
+    }
 
-        membroExistente = this.membroRepository.save(membroExistente);
-        if(membro.getFichaMedica() != null){
+    private void atualizarFichaMedica(Membro membroExistente, Membro membro) {
+        if (membro.getFichaMedica() != null) {
             membro.getFichaMedica().setMembro(membroExistente);
             membroExistente.setFichaMedica(this.fichaMedicaRepository.save(membro.getFichaMedica()));
         }
+    }
 
+    private void atualizarPosse(Membro membroExistente, Long idCargo) {
         if (idCargo != null) {
             Cargo cargo = cargoRepository.findById(idCargo)
                 .orElseThrow(() -> new ResourceNotFoundException("Cargo não encontrado com ID: " + idCargo));
@@ -139,8 +156,6 @@ public class MembroService {
                 this.posseRepository.save(posse);
             }
         }
-
-        return membroExistente;
     }
 
     public List<Membro> listarMembros(Integer ativo) {

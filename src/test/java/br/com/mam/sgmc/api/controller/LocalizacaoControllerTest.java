@@ -25,13 +25,16 @@ import br.com.mam.sgmc.model.localizacao.Pais;
 import br.com.mam.sgmc.model.localizacao.Uf;
 import br.com.mam.sgmc.services.LocalizacaoService;
 
-@WebMvcTest(LocalizacaoController.class)
+@WebMvcTest(controllers = LocalizacaoController.class, properties = "server.servlet.context-path=")
 @Import(br.com.mam.sgmc.config.SecurityConfig.class)
 @DisplayName("LocalizacaoController Comprehensive Tests")
 class LocalizacaoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private br.com.mam.sgmc.config.SgmcSecurity sgmcSecurity;
 
     @MockitoBean
     private LocalizacaoService localizacaoService;
@@ -42,6 +45,10 @@ class LocalizacaoControllerTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(sgmcSecurity.isSelf(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.isMotoOwner(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.canInscribe(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+
         pais = new Pais();
         pais.setSigla("BR");
         pais.setNome("Brasil");
@@ -68,7 +75,7 @@ class LocalizacaoControllerTest {
         void deveListarPaises() throws Exception {
             when(localizacaoService.listarPaisesComFiltros(any(), any(), any())).thenReturn(List.of(pais));
 
-            mockMvc.perform(get("/localizacao/paises").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/paises").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].sigla").value("BR"))
                     .andExpect(jsonPath("$[0].nome").value("Brasil"))
@@ -81,7 +88,7 @@ class LocalizacaoControllerTest {
             when(localizacaoService.listarPaisesComFiltros(any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Não foi possível encontrar nenhum país com os filtros informados"));
 
-            mockMvc.perform(get("/localizacao/paises").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/paises").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }
@@ -95,7 +102,7 @@ class LocalizacaoControllerTest {
         void deveListarUfs() throws Exception {
             when(localizacaoService.listarUfsComFiltros(any(), any(), any(), any())).thenReturn(List.of(uf));
 
-            mockMvc.perform(get("/localizacao/ufs").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/ufs").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].sigla").value("SP"))
                     .andExpect(jsonPath("$[0].nome").value("São Paulo"))
@@ -109,7 +116,7 @@ class LocalizacaoControllerTest {
             when(localizacaoService.listarUfsComFiltros(any(), any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Não foi possível encontrar nenhuma UF com os filtros informados"));
 
-            mockMvc.perform(get("/localizacao/ufs").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/ufs").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }
@@ -123,7 +130,7 @@ class LocalizacaoControllerTest {
         void deveListarCidades() throws Exception {
             when(localizacaoService.listarCidadesComFiltros(any(), any(), any())).thenReturn(List.of(cidade));
 
-            mockMvc.perform(get("/localizacao/cidades").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/cidades").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(1))
                     .andExpect(jsonPath("$[0].nome").value("São Paulo"))
@@ -138,7 +145,7 @@ class LocalizacaoControllerTest {
             when(localizacaoService.listarCidadesComFiltros(any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Não foi possível encontrar nenhuma cidade com os filtros informados"));
 
-            mockMvc.perform(get("/localizacao/cidades").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+            mockMvc.perform(get("/localizacao/cidades").with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }

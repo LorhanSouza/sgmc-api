@@ -18,7 +18,7 @@ import br.com.mam.sgmc.errors.ResponseStatusException;
 import br.com.mam.sgmc.services.LocalizacaoService;
 import lombok.RequiredArgsConstructor;
 
-@PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
+@PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
 @RestController
 @RequestMapping("/localizacao")
 @RequiredArgsConstructor

@@ -122,6 +122,17 @@ public class ExceptionController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorDetailsDTO> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException exception) {
+        ErrorDetailsDTO errorResponse = new ErrorDetailsDTO(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                exception.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorDetailsDTO> handleHttpRequestMethodNotSupportedException(
             HttpRequestMethodNotSupportedException exception) {

@@ -25,9 +25,6 @@ import br.com.mam.sgmc.model.localizacao.Cidade;
 import br.com.mam.sgmc.model.localizacao.Uf;
 import br.com.mam.sgmc.model.localizacao.Pais;
 import br.com.mam.sgmc.model.pk.PossePk;
-import br.com.mam.sgmc.repository.SedeRepository;
-import br.com.mam.sgmc.repository.CidadeRepository;
-import br.com.mam.sgmc.repository.UfRepository;
 
 @SpringBootTest
 @Transactional

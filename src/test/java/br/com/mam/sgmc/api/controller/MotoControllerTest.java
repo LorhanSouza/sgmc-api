@@ -42,13 +42,16 @@ import br.com.mam.sgmc.model.moto.Moto;
 import br.com.mam.sgmc.model.moto.Seguro;
 import br.com.mam.sgmc.services.MotoService;
 
-@WebMvcTest(MotoController.class)
+@WebMvcTest(controllers = MotoController.class, properties = "server.servlet.context-path=")
 @Import(SecurityConfig.class)
 @DisplayName("MotoController Comprehensive Tests")
 class MotoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private br.com.mam.sgmc.config.SgmcSecurity sgmcSecurity;
 
     @MockitoBean
     private MotoService motoService;
@@ -60,6 +63,10 @@ class MotoControllerTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(sgmcSecurity.isSelf(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.isMotoOwner(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.canInscribe(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+
         objectMapper.registerModule(new JavaTimeModule());
 
         motoRequestDTO = new MotoRequestDTO();
@@ -121,7 +128,7 @@ class MotoControllerTest {
             when(motoService.salvarMoto(any(Moto.class), eq(1L))).thenReturn(moto);
 
             mockMvc.perform(post("/motos")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isCreated())
@@ -135,7 +142,7 @@ class MotoControllerTest {
             motoRequestDTO.setPlaca(null);
 
             mockMvc.perform(post("/motos")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isBadRequest());
@@ -149,7 +156,7 @@ class MotoControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Moto com essa placa já existe"));
 
             mockMvc.perform(post("/motos")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isConflict());
@@ -163,7 +170,7 @@ class MotoControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Moto não pode ser associada a um membro inativo"));
 
             mockMvc.perform(post("/motos")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isConflict());
@@ -181,7 +188,7 @@ class MotoControllerTest {
             when(motoService.listarMotos(any(), any(), any(), any())).thenReturn(List.of(moto));
 
             mockMvc.perform(get("/motos")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].placa").value("ABC1234"))
                 .andExpect(jsonPath("$[0].modelo").value("CB 500"));
@@ -194,7 +201,7 @@ class MotoControllerTest {
             when(motoService.listarMotos(eq(1L), any(), any(), any())).thenReturn(List.of(moto));
 
             mockMvc.perform(get("/motos?idMembro=1")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idMembro").value(1));
         }
@@ -206,7 +213,7 @@ class MotoControllerTest {
             when(motoService.listarMotos(any(), any(), eq("Honda"), any())).thenReturn(List.of(moto));
 
             mockMvc.perform(get("/motos?marca=Honda")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].marca").value("Honda"));
         }
@@ -223,7 +230,7 @@ class MotoControllerTest {
             when(motoService.buscarPorPlaca("ABC1234")).thenReturn(moto);
 
             mockMvc.perform(get("/motos/ABC1234")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.placa").value("ABC1234"))
                 .andExpect(jsonPath("$.modelo").value("CB 500"));
@@ -237,7 +244,7 @@ class MotoControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Moto não encontrada"));
 
             mockMvc.perform(get("/motos/XYZ9999")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
     }
@@ -253,7 +260,7 @@ class MotoControllerTest {
             when(motoService.atualizarMoto(any(Moto.class), eq(1L))).thenReturn(moto);
 
             mockMvc.perform(put("/motos/ABC1234")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isOk())
@@ -268,7 +275,7 @@ class MotoControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Membro não encontrado"));
 
             mockMvc.perform(put("/motos/ABC1234")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isNotFound());
@@ -281,7 +288,7 @@ class MotoControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Moto não pode ser associada a um membro inativo"));
 
             mockMvc.perform(put("/motos/ABC1234")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                    .with(jwt().authorities(() -> "ROLE_admin"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(motoRequestDTO)))
                     .andExpect(status().isConflict());
@@ -298,7 +305,7 @@ class MotoControllerTest {
             org.mockito.Mockito.doNothing().when(motoService).deletarMoto(1L, "ABC1234");
 
             mockMvc.perform(delete("/motos/1/ABC1234")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNoContent());
         }
 
@@ -309,7 +316,7 @@ class MotoControllerTest {
                 .when(motoService).deletarMoto(1L, "XYZ0000");
 
             mockMvc.perform(delete("/motos/1/XYZ0000")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isNotFound());
         }
 
@@ -320,7 +327,7 @@ class MotoControllerTest {
                 .when(motoService).deletarMoto(99L, "ABC1234");
 
             mockMvc.perform(delete("/motos/99/ABC1234")
-                    .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                    .with(jwt().authorities(() -> "ROLE_admin")))
                     .andExpect(status().isConflict());
         }
     }

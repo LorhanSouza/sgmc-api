@@ -29,7 +29,6 @@ import jakarta.validation.Valid;
 
 import br.com.mam.sgmc.api.openapi.MotoControllerOpenAPI;
 
-@PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
 @RestController
 @RequestMapping(value = "/motos")
 @RequiredArgsConstructor
@@ -37,6 +36,7 @@ public class MotoController implements MotoControllerOpenAPI {
 
     private final MotoService motoService;
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isSelf(#motoRequestDTO.idMembro)")
     @PostMapping
     public ResponseEntity<Void> criarMoto(@RequestBody @Valid MotoRequestDTO motoRequestDTO) {
 
@@ -73,6 +73,7 @@ public class MotoController implements MotoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.CREATED).header("Location", location).build();
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or (hasRole('membro') and #idMembro != null and @sgmcSecurity.isSelf(#idMembro))")
     @GetMapping
     public List<MotoResponseDTO> listarMotos(
             @RequestParam(required = false) Long idMembro,
@@ -83,12 +84,14 @@ public class MotoController implements MotoControllerOpenAPI {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isMotoOwner(#placa)")
     @GetMapping("/{placa}")
     public ResponseEntity<MotoResponseDTO> buscarPorPlaca(@PathVariable String placa) {
         Moto moto = motoService.buscarPorPlaca(placa);
         return ResponseEntity.ok(MotoResponseDTO.toResponseDTO(moto));
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isSelf(#motoRequestDTO.idMembro)")
     @PutMapping("/{placa}")
     public ResponseEntity<MotoResponseDTO> atualizarMoto(@PathVariable String placa,
             @RequestBody MotoRequestDTO motoRequestDTO) {
@@ -123,6 +126,7 @@ public class MotoController implements MotoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(motoResponseDTO);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isSelf(#idMembro)")
     @DeleteMapping("/{idMembro}/{placa}")
     public ResponseEntity<Void> deletarMoto(@PathVariable Long idMembro, @PathVariable String placa) {
         this.motoService.deletarMoto(idMembro, placa);

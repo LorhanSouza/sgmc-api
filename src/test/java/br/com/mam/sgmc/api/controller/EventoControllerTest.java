@@ -31,13 +31,16 @@ import br.com.mam.sgmc.model.localizacao.Local;
 import br.com.mam.sgmc.services.EventoService;
 import br.com.mam.sgmc.errors.ResourceNotFoundException;
 
-@WebMvcTest(EventoController.class)
+@WebMvcTest(controllers = EventoController.class, properties = "server.servlet.context-path=")
 @Import(br.com.mam.sgmc.config.SecurityConfig.class)
 @DisplayName("Testes de Integração - EventoController")
 class EventoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private br.com.mam.sgmc.config.SgmcSecurity sgmcSecurity;
 
     @MockitoBean
     private EventoService eventoService;
@@ -55,6 +58,10 @@ class EventoControllerTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(sgmcSecurity.isSelf(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.isMotoOwner(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.canInscribe(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+
         objectMapper.registerModule(new JavaTimeModule());
 
         LocalRequestDTO localDTO = new LocalRequestDTO();
@@ -96,7 +103,7 @@ class EventoControllerTest {
         when(eventoService.criarEvento(any(Evento.class))).thenReturn(evento);
 
         mockMvc.perform(post("/eventos")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventoRequestDTO)))
                 .andExpect(status().isCreated())
@@ -109,7 +116,7 @@ class EventoControllerTest {
     void deveListarEventos() throws Exception {
         when(eventoService.listarEventos()).thenReturn(List.of(evento));
 
-        mockMvc.perform(get("/eventos").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+        mockMvc.perform(get("/eventos").with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].nome").value("Encontro de Motos"));
@@ -120,7 +127,7 @@ class EventoControllerTest {
     void deveBuscarEventoPorId() throws Exception {
         when(eventoService.buscarPorId(1L)).thenReturn(evento);
 
-        mockMvc.perform(get("/eventos/1").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+        mockMvc.perform(get("/eventos/1").with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nome").value("Encontro de Motos"));
@@ -131,7 +138,7 @@ class EventoControllerTest {
     void deveRetornar404AoBuscarIdInexistente() throws Exception {
         when(eventoService.buscarPorId(99L)).thenThrow(new ResourceNotFoundException("Evento não encontrado"));
 
-        mockMvc.perform(get("/eventos/99").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+        mockMvc.perform(get("/eventos/99").with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isNotFound());
     }
 
@@ -141,7 +148,7 @@ class EventoControllerTest {
         when(eventoService.atualizarEvento(eq(1L), any(Evento.class))).thenReturn(evento);
 
         mockMvc.perform(put("/eventos/1")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventoRequestDTO)))
                 .andExpect(status().isOk())
@@ -154,7 +161,7 @@ class EventoControllerTest {
     void deveDeletarEventoComSucesso() throws Exception {
         doNothing().when(eventoService).deletarEvento(1L);
 
-        mockMvc.perform(delete("/eventos/1").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+        mockMvc.perform(delete("/eventos/1").with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isNoContent());
     }
 
@@ -174,7 +181,7 @@ class EventoControllerTest {
 
         when(eventoService.buscarPorId(1L)).thenReturn(evento);
 
-        mockMvc.perform(get("/eventos/1/inscricoes").with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+        mockMvc.perform(get("/eventos/1/inscricoes").with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idMembro").value(10))
                 .andExpect(jsonPath("$[0].nomeMembro").value("Membro Teste"));
@@ -201,7 +208,7 @@ class EventoControllerTest {
         when(eventoService.inscreverMembros(any())).thenReturn(List.of(inscricao));
 
         mockMvc.perform(post("/eventos/1/inscricoes")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(List.of(dto))))
                 .andExpect(status().isCreated())

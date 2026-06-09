@@ -31,13 +31,16 @@ import br.com.mam.sgmc.model.Membro;
 import br.com.mam.sgmc.model.enums.Ativo;
 import br.com.mam.sgmc.services.MembroService;
 
-@WebMvcTest(MembroController.class)
+@WebMvcTest(controllers = MembroController.class, properties = "server.servlet.context-path=")
 @Import(br.com.mam.sgmc.config.SecurityConfig.class)
 @DisplayName("Testes de Integração - MembroController")
 class MembroControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private br.com.mam.sgmc.config.SgmcSecurity sgmcSecurity;
 
     @MockitoBean
     private MembroService membroService;
@@ -49,6 +52,10 @@ class MembroControllerTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(sgmcSecurity.isSelf(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.isMotoOwner(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+        org.mockito.Mockito.when(sgmcSecurity.canInscribe(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+
         objectMapper.registerModule(new JavaTimeModule());
 
         membroRequestDTO = new MembroRequestDTO();
@@ -112,7 +119,7 @@ class MembroControllerTest {
         when(membroService.salvarMembro(any(Membro.class), any(), any(), any())).thenReturn(membro);
 
         mockMvc.perform(post("/membros")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(membroRequestDTO)))
                 .andExpect(status().isCreated())
@@ -125,7 +132,7 @@ class MembroControllerTest {
         membroRequestDTO.setNome(null);
 
         mockMvc.perform(post("/membros")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(membroRequestDTO)))
                 .andExpect(status().isBadRequest());
@@ -137,7 +144,7 @@ class MembroControllerTest {
         membroRequestDTO.setFichaMedica(null);
 
         mockMvc.perform(post("/membros")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(membroRequestDTO)))
                 .andExpect(status().isBadRequest());
@@ -149,7 +156,7 @@ class MembroControllerTest {
         when(membroService.listarMembros(null)).thenReturn(List.of(membro));
 
         mockMvc.perform(get("/membros")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nome").value("João Silva"))
                 .andExpect(jsonPath("$[0].ativo").value(true));
@@ -161,7 +168,7 @@ class MembroControllerTest {
         when(membroService.listarMembros(0)).thenReturn(List.of(membro));
 
         mockMvc.perform(get("/membros?ativo=0")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].ativo").value(true));
     }
@@ -172,7 +179,7 @@ class MembroControllerTest {
         when(membroService.buscarPorId(1L)).thenReturn(membro);
 
         mockMvc.perform(get("/membros/1")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome").value("João Silva"));
     }
@@ -187,7 +194,7 @@ class MembroControllerTest {
         when(membroService.atualizarMembro(any(Membro.class), eq(1L), any(), any(), any())).thenReturn(membro);
 
         mockMvc.perform(put("/membros/1")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT"))
+                .with(jwt().authorities(() -> "ROLE_admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(membroRequestDTO)))
                 .andExpect(status().isOk())
@@ -200,7 +207,7 @@ class MembroControllerTest {
         when(membroService.buscarPorId(99L)).thenThrow(new br.com.mam.sgmc.errors.ResourceNotFoundException("Não encontrado"));
 
         mockMvc.perform(get("/membros/99")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isNotFound());
     }
 
@@ -210,7 +217,7 @@ class MembroControllerTest {
         org.mockito.Mockito.doNothing().when(membroService).inativarMembro(1L);
 
         mockMvc.perform(patch("/membros/1")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isNoContent());
     }
 
@@ -221,7 +228,7 @@ class MembroControllerTest {
             .when(membroService).inativarMembro(99L);
 
         mockMvc.perform(patch("/membros/99")
-                .with(jwt().authorities(() -> "ROLE_PRESIDENT")))
+                .with(jwt().authorities(() -> "ROLE_admin")))
                 .andExpect(status().isNotFound());
     }
 

@@ -18,7 +18,6 @@ import java.util.List;
 
 import br.com.mam.sgmc.api.openapi.SedeControllerOpenAPI;
 
-@PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
 @RestController
 @RequestMapping("/sedes")
 @RequiredArgsConstructor
@@ -26,6 +25,7 @@ public class SedeController implements SedeControllerOpenAPI {
 
     private final SedeService sedeService;
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PostMapping
     public ResponseEntity<Void> salvarSede(@RequestBody @Valid SedeRequestDTO sedeRequestDTO) {
         Sede sedeSalva = sedeService.salvarSede(
@@ -39,6 +39,7 @@ public class SedeController implements SedeControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.CREATED).header(HttpHeaders.LOCATION, location).build();
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
     @GetMapping("/buscar/{id}")
     public ResponseEntity<SedeResponseDTO> buscarPorId(@PathVariable Long id) {
         Sede sede = this.sedeService.buscarPorId(id);
@@ -46,6 +47,7 @@ public class SedeController implements SedeControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
     @GetMapping("/listar")
     public ResponseEntity<List<SedeResponseDTO>> listarSedesComFiltros(
         @RequestParam(required = false) String nome,
@@ -61,6 +63,7 @@ public class SedeController implements SedeControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PutMapping("/{id}")
     public ResponseEntity<SedeResponseDTO> atualizarSede(@PathVariable Long id, @RequestBody @Valid SedeRequestDTO sedeRequestDTO) {
         Sede sede = SedeRequestDTO.toSede(sedeRequestDTO);
@@ -69,6 +72,7 @@ public class SedeController implements SedeControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PatchMapping("/{id}/inativar")
     public ResponseEntity<Void> inativarSede(@PathVariable Long id) {
         this.sedeService.inativarSede(id);

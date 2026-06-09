@@ -30,7 +30,6 @@ import br.com.mam.sgmc.services.MotoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
 @RestController
 @RequestMapping(value = "/eventos")
 @RequiredArgsConstructor
@@ -40,6 +39,7 @@ public class EventoController implements EventoControllerOpenAPI {
     private final MembroService membroService;
     private final MotoService motoService;
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
     @GetMapping
     public ResponseEntity<List<EventoResponseDTO>> listarEventos() {
         List<Evento> eventos = this.eventoService.listarEventos();
@@ -49,6 +49,7 @@ public class EventoController implements EventoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(responses);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
     @GetMapping("/{id}")
     public ResponseEntity<EventoResponseDTO> buscarPorId(@PathVariable Long id) {
         Evento evento = this.eventoService.buscarPorId(id);
@@ -56,6 +57,7 @@ public class EventoController implements EventoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PostMapping
     public ResponseEntity<EventoResponseDTO> criarEvento(@RequestBody @Valid EventoRequestDTO eventoRequestDTO) {
         Evento evento = Evento.fromRequestDTO(eventoRequestDTO);
@@ -63,6 +65,7 @@ public class EventoController implements EventoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventoCriado);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PutMapping("/{id}")
     public ResponseEntity<EventoResponseDTO> atualizarEvento(@PathVariable Long id, @RequestBody @Valid EventoRequestDTO eventoRequestDTO) {
         Evento evento = Evento.fromRequestDTO(eventoRequestDTO);
@@ -71,12 +74,14 @@ public class EventoController implements EventoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarEvento(@PathVariable Long id) {
         this.eventoService.deletarEvento(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.canInscribe(#inscricoesRequestDTO)")
     @PostMapping("/{id}/inscricoes")
     public ResponseEntity<List<InscricaoResponseDTO>> inscreverMembros(
             @PathVariable Long id,
@@ -111,6 +116,7 @@ public class EventoController implements EventoControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria', 'membro')")
     @GetMapping("/{id}/inscricoes")
     public ResponseEntity<List<InscricaoResponseDTO>> listarInscritos(@PathVariable Long id) {
         Evento evento = this.eventoService.buscarPorId(id);

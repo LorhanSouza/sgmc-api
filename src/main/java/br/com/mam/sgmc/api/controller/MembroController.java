@@ -31,7 +31,6 @@ import br.com.mam.sgmc.services.MembroService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@PreAuthorize("hasAnyRole('PRESIDENT','SECRETARY')")
 @RestController
 @RequestMapping(value = "/membros")
 @RequiredArgsConstructor
@@ -39,6 +38,7 @@ public class MembroController implements MembroControllerOpenAPI {
 
     private final MembroService membroService;
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PostMapping
     public ResponseEntity<String> criarMembro(@RequestBody @Valid MembroRequestDTO membroDTO)
             throws ResourceNotFoundException {
@@ -86,6 +86,7 @@ public class MembroController implements MembroControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.CREATED).header(HttpHeaders.LOCATION, location).build();
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @GetMapping
     public ResponseEntity<List<MembroResponseDTO>> listarMembros(@RequestParam(required = false) Integer ativo) {
         List<Membro> membros = membroService.listarMembros(ativo);
@@ -95,12 +96,14 @@ public class MembroController implements MembroControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(responses);
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isSelf(#id)")
     @GetMapping("/{id}")
     public ResponseEntity<MembroResponseDTO> buscarPorId(@PathVariable Long id) {
         Membro membro = membroService.buscarPorId(id);
         return ResponseEntity.status(HttpStatus.OK).body(MembroResponseDTO.toResponseDTO(membro));
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria') or @sgmcSecurity.isSelf(#id)")
     @PutMapping("/{id}")
     public ResponseEntity<MembroResponseDTO> atualizarMembro(@PathVariable Long id, @RequestBody @Valid MembroRequestDTO membroDTO) throws ResourceNotFoundException{
         Membro membro = new Membro();
@@ -142,6 +145,7 @@ public class MembroController implements MembroControllerOpenAPI {
         return ResponseEntity.status(HttpStatus.OK).body(MembroResponseDTO.toResponseDTO(membro));
     }
 
+    @PreAuthorize("hasAnyRole('admin', 'diretoria')")
     @PatchMapping("/{id}")
     public ResponseEntity<Void> inativarMembro(@PathVariable Long id) {
         this.membroService.inativarMembro(id);
