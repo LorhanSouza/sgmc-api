@@ -51,7 +51,6 @@ public class ExceptionController {
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 error);
-        exception.printStackTrace();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
@@ -106,8 +105,6 @@ public class ExceptionController {
                 HttpStatus.BAD_REQUEST.value(),
                 BAD_REQUEST,
                 exception.getMessage());
-
-        exception.printStackTrace();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
